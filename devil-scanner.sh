@@ -18,14 +18,13 @@ CACHE_FILE=".cached_ranges.txt"
 SHUFFLED_FILE=".shuffled_ranges.txt"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/joknorea-del/cf-scanner/main/ranges.txt"
 
-# 🚀 تنظیم تعداد پروسس هم‌زمان (بر اساس قدرت کشش شبکه گوشی)
-# عدد ۱۵ یا ۲۰ بهترین حالت برای ترموکس روی دیتای موبایله که پینگ واقعی بده
+# Concurrency Pacing Limit
 MAX_PARALLEL=15
 
 # Safe file initializer
 if [ ! -f "$RESULT_FILE" ]; then
     echo -e "IP\t\tAvg_Ping" > "$RESULT_FILE"
-    echo "----------------------------------------" >> "$FILE_HEADER"
+    echo "----------------------------------------" >> "$RESULT_FILE"
 fi
 
 # Sync & Shuffle Cloud
@@ -94,17 +93,16 @@ while IFS= read -r raw_range <&3; do
             fi
         ) &
         
-        # ⚙️ دنده‌کشی پروسس‌ها: چک کردن تعداد کارهای فعال در پس‌زمینه
-        # این تکه کد اجازه نمیده تعداد کارهای هم‌زمان از حد مجاز بالاتر بره
+        # Mechanical Queue Controller
         while [ $(jobs -r | wc -l) -ge $MAX_PARALLEL ]; do
             sleep 0.05
         done
         
     done
     
-    # مطمئن شو رنج فعلی کاملاً خالی شده بعد برو رنج بعدی
     wait
     
 done 3< "$SHUFFLED_FILE"
 
 rm -f "$CACHE_FILE"
+echo -e "${GREEN}[✔] Scan fully completed without interrupts!${NC}"
