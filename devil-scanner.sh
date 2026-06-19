@@ -9,7 +9,7 @@ NC='\033[0m'
 
 clear
 echo -e "${RED}======================================================${NC}"
-echo -e "${RED}    DEVIL CF SCANNER - THE INVINCIBLE GEAR ENGINE     ${NC}"
+echo -e "${RED}    DEVIL CF SCANNER - THE INVINCIBLE GEAR ENGINE V5  ${NC}"
 echo -e "${RED}======================================================${NC}"
 
 TARGET_DOM="chatgpt.com"
@@ -39,7 +39,7 @@ if curl -s --connect-timeout 10 "$GITHUB_RAW_URL" -o "$CACHE_FILE"; then
 fi
 
 if [ ! -s "$SHUFFLED_FILE" ]; then
-    echo -e "${RED}[!] Error: No ranges available! Connect to internet at least once.${NC}"
+    echo -e "${RED}[!] Error: No ranges available!${NC}"
     exit 1
 fi
 
@@ -48,7 +48,6 @@ echo -e "${GREEN}[✔] Loaded $total_ranges ranges. GEAR ENGINE ONLINE...${NC}\n
 
 current_count=0
 
-# Bulletproof line-by-line file descriptor reading
 while IFS= read -r raw_range <&3; do
     [ -z "$raw_range" ] && continue
     ((current_count++))
@@ -56,8 +55,27 @@ while IFS= read -r raw_range <&3; do
     clean_range=$(echo "$raw_range" | sed -E 's/\.0\/24//g' | sed -E 's/\/24//g' | sed -E 's/\.$//g' | tr -d '\r' | tr -d ' ')
     clean_range="${clean_range%.}"
 
-    echo -e "${CYAN}[*] [$current_count/$total_ranges] Engine Scan: $clean_range.0/24${NC}"
+    echo -e "${CYAN}[*] [$current_count/$total_ranges] Checking Range: $clean_range.0/24 ...${NC}"
     
+    # 🎯 ADVANCED RANGE PRE-CHECK (3-Start, 3-Middle, 3-End)
+    scout_passed=0
+    # IDs: 2,3,4 (Start) | 126,127,128 (Middle) | 251,252,253 (End)
+    for scout_id in 2 3 4 126 127 128 251 252 253; do
+        scout_ip="$clean_range.$scout_id"
+        if : 2>/dev/null >"/dev/tcp/$scout_ip/443"; then
+            scout_passed=1
+            break
+        fi
+    done
+
+    # If all 9 scout IPs failed, skip the entire /24 range instantly!
+    if [ $scout_passed -eq 0 ]; then
+        echo -e "${RED}[!] Range $clean_range.0/24 is totally BLOCKED. Skipping!${NC}"
+        continue
+    fi
+    
+    # If range is alive, unleash the full scan engine
+    echo -e "${GREEN}[+] Range is ALIVE. Scanning 254 IPs...${NC}"
     for i in {1..254}; do
         ip="$clean_range.$i"
         
@@ -67,7 +85,7 @@ while IFS= read -r raw_range <&3; do
                 total_ping=0
                 valid_tests=0
                 
-                # Phase 2: Precise 3-Round Checking (Timeout 1.8s)
+                # Phase 2: Precise 3-Round Checking
                 for test_round in {1..3}; do
                     start_time=$(date +%s%N)
                     http_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 1.8 --max-time 2.2 \
@@ -82,11 +100,10 @@ while IFS= read -r raw_range <&3; do
                     sleep 0.02
                 done
 
-                # If at least 1 test succeeds, log it!
                 if [ "$valid_tests" -gt 0 ]; then
                     avg_ping=$(( total_ping / valid_tests ))
                     if [ "$avg_ping" -lt 1400 ]; then
-                        echo -e "${GREEN}[★ LIVE IP] $ip | Avg Ping: ${avg_ping}ms | Success: $valid_tests/3${NC}"
+                        echo -e "${GREEN}[★ LIVE IP] $ip | Avg Ping: ${avg_ping}ms${NC}"
                         echo -e "$ip\t${avg_ping}ms" >> "$RESULT_FILE"
                     fi
                 fi
@@ -99,10 +116,8 @@ while IFS= read -r raw_range <&3; do
         done
         
     done
-    
     wait
-    
 done 3< "$SHUFFLED_FILE"
 
 rm -f "$CACHE_FILE"
-echo -e "${GREEN}[✔] Scan fully completed without interrupts!${NC}"
+echo -e "${GREEN}[✔] Scan fully completed!${NC}"
