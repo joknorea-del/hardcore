@@ -18,7 +18,7 @@ CACHE_FILE=".cached_ranges.txt"
 SHUFFLED_FILE=".shuffled_ranges.txt"
 GITHUB_RAW_URL="https://raw.githubusercontent.com/joknorea-del/cf-scanner/main/ranges.txt"
 
-# Concurrency Pacing Limit
+# Concurrency Pacing Limit (Increased to 15 for hyper-speed scans on alive ranges)
 MAX_PARALLEL=15
 
 # Safe file initializer
@@ -104,7 +104,7 @@ while IFS= read -r raw_range <&3; do
                 if [ "$valid_tests" -gt 0 ]; then
                     avg_ping=$(( total_ping / valid_tests ))
                     if [ "$avg_ping" -lt 1400 ]; then
-                        echo -e "${GREEN}[★ LIVE IP] $ip | Avg Ping: ${avg_ping}ms${NC}"
+                        echo -e "${GREEN}[★ LIVE IP] $ip | Avg Ping: ${avg_ping}ms | Success: $valid_tests/3${NC}"
                         echo -e "$ip\t${avg_ping}ms" >> "$RESULT_FILE"
                     fi
                 fi
